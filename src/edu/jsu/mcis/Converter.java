@@ -7,7 +7,7 @@ import org.json.simple.*;
 import org.json.simple.parser.*;
 
 public class Converter {
-    
+
     /*
     
         Consider the following CSV data:
@@ -54,45 +54,108 @@ public class Converter {
         libraries we have discussed, OpenCSV and json-simple.  See the "Data
         Exchange" lecture notes for more details, including example code.
     
-    */
-    
+     */
+
     @SuppressWarnings("unchecked")
     public static String csvToJson(String csvString) {
-        
+
         String results = "";
-        
+
         try {
-            
+
             CSVReader reader = new CSVReader(new StringReader(csvString));
             List<String[]> full = reader.readAll();
             Iterator<String[]> iterator = full.iterator();
-            
-            // INSERT YOUR CODE HERE
-            
-        }        
-        catch(Exception e) { return e.toString(); }
-        
+
+            JSONObject json = new JSONObject();
+            JSONArray cHeaders = new JSONArray();
+            JSONArray rHeaders = new JSONArray();
+            JSONArray data = new JSONArray();
+            String[] rows;
+
+            for (String string : iterator.next()) {
+                cHeaders.add(string);
+            }
+
+            while (iterator.hasNext()) {
+
+                JSONArray row = new JSONArray();
+
+                rows = iterator.next();
+                rHeaders.add(rows[0]);
+
+                for (int i = 1; i < rows.length; ++i) {
+                    int newData = Integer.parseInt(rows[i]);
+                    row.add(newData);
+                }
+                data.add(row);
+            }
+
+            json.put("colHeaders", cHeaders);
+            json.put("rowHeaders", rHeaders);
+            json.put("data", data);
+
+            results = JSONValue.toJSONString(json);
+
+        } catch (Exception e) { return e.toString(); }
+
         return results.trim();
-        
+
     }
-    
+
     public static String jsonToCsv(String jsonString) {
-        
+
         String results = "";
-        
+
         try {
 
             StringWriter writer = new StringWriter();
             CSVWriter csvWriter = new CSVWriter(writer, ',', '"', '\n');
-            
-            // INSERT YOUR CODE HERE
-            
-        }
-        
-        catch(Exception e) { return e.toString(); }
-        
+
+            JSONParser parser = new JSONParser();
+            JSONObject jobject = (JSONObject) parser.parse(jsonString);
+
+            JSONArray col = (JSONArray) jobject.get("colHeaders");
+            JSONArray row = (JSONArray) jobject.get("rowHeaders");
+            JSONArray data = (JSONArray) jobject.get("data");
+
+            String[] csvcol = new String[col.size()];
+            String[] csvrow = new String[row.size()];
+            String[] csvdata = new String[data.size()];
+
+            for (int i = 0; i < col.size(); ++i) {
+                csvcol[i] = col.get(i).toString();
+            }
+
+            csvWriter.writeNext(csvcol);
+
+            for (int i = 0; i < row.size(); ++i) {
+
+                csvrow[i] = row.get(i).toString();
+                csvdata[i] = data.get(i).toString();
+            }
+
+            for (int i = 0; i < csvdata.length; ++i) {
+
+                JSONArray dataValues = (JSONArray) parser.parse(csvdata[i]);
+                String[] rows = new String[dataValues.size() + 1];
+
+                rows[0] = csvrow[i];
+
+                for (int j = 1; j < rows.length; ++j) {
+                    String newValue = String.valueOf(dataValues.get(j - 1));
+                    rows[j] = newValue;
+                }
+
+                csvWriter.writeNext(rows);
+            }
+
+            results = writer.toString();
+
+        } catch (Exception e) { return e.toString(); }
+
         return results.trim();
-        
+
     }
 
 }
